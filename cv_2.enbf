@@ -1,0 +1,8 @@
+INT ::= [operator] nonzero_digit digits_with_underscore [fractional] | '0' | '-' '0' [fractional];
+
+operator = '+'|'-';
+nonzero_digit ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+digit = '0' | nonzero_digit;
+digits_with_underscore = {digit | {'_'} digit};
+
+fractional = "," digit digits_with_underscore;
