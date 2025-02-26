@@ -1,0 +1,4 @@
+statement = '(' statement ')' | statement operator statement | letter;
+
+letter = "a";
+operator = "+" | "*";
