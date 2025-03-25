@@ -1,0 +1,11 @@
+@banger {
+    set energy on 50
+    set bass on 5
+
+    drop bombs we boostBass(amount) {
+        set bass on bass * amount
+        back with a track called bass
+    }
+  
+    soaking through !boostBass(energy)
+}
