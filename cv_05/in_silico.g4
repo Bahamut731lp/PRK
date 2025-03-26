@@ -17,6 +17,11 @@ ARGUMENT_LIST_START: '(';
 ARGUMENT_LIST_END: ')';
 ARGUMENT_LIST_SEPARATOR: ',';
 
+ADDITION_OPERATOR: '+';
+SUBTRACTION_OPERATOR: '-';
+MULTIPLICATION_OPERATOR: '*';
+DIVISION_OPERATOR: ':' | '/';
+
 NUMBER: DIGIT+ ('.' DIGIT+)?;
 WHITESPACE: (' ' | '\t') -> skip;
 NEWLINE: ('\r'? '\n' | '\r')+ -> skip;
@@ -34,6 +39,6 @@ print_statement: PRINT_KEYWORD ('!'expression);
 parameters: ARGUMENT_LIST_START argument_list? ARGUMENT_LIST_END;
 argument_list: IDENTIFIER (ARGUMENT_LIST_SEPARATOR IDENTIFIER)*;
 
-expression: term (('+' | '-') term)*;
-term: factor (('*' | '/') factor)*;
-factor: NUMBER | '(' expression ')' | ('-' | '+') factor | IDENTIFIER | function_call;
+expression: term ((ADDITION_OPERATOR | SUBTRACTION_OPERATOR) term)*;
+term: factor ((MULTIPLICATION_OPERATOR | DIVISION_OPERATOR) factor)*;
+factor: NUMBER | '(' expression ')' | (SUBTRACTION_OPERATOR | ADDITION_OPERATOR) factor | IDENTIFIER | function_call;
