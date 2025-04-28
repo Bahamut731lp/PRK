@@ -37,7 +37,7 @@ function_call: IDENTIFIER parameters;
 print_statement: PRINT_KEYWORD ('!'expression);
 
 parameters: ARGUMENT_LIST_START argument_list? ARGUMENT_LIST_END;
-argument_list: IDENTIFIER (ARGUMENT_LIST_SEPARATOR IDENTIFIER)*;
+argument_list: expression (ARGUMENT_LIST_SEPARATOR expression)*;
 
 expression: term ((ADDITION_OPERATOR | SUBTRACTION_OPERATOR) term)*;
 term: factor ((MULTIPLICATION_OPERATOR | DIVISION_OPERATOR) factor)*;

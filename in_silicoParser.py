@@ -34,7 +34,7 @@ def serializedATN():
         0,0,61,62,3,12,6,0,62,9,1,0,0,0,63,64,5,7,0,0,64,65,5,1,0,0,65,66,
         3,16,8,0,66,11,1,0,0,0,67,69,5,10,0,0,68,70,3,14,7,0,69,68,1,0,0,
         0,69,70,1,0,0,0,70,71,1,0,0,0,71,72,5,11,0,0,72,13,1,0,0,0,73,78,
-        5,20,0,0,74,75,5,12,0,0,75,77,5,20,0,0,76,74,1,0,0,0,77,80,1,0,0,
+        3,16,8,0,74,75,5,12,0,0,75,77,3,16,8,0,76,74,1,0,0,0,77,80,1,0,0,
         0,78,76,1,0,0,0,78,79,1,0,0,0,79,15,1,0,0,0,80,78,1,0,0,0,81,86,
         3,18,9,0,82,83,7,0,0,0,83,85,3,18,9,0,84,82,1,0,0,0,85,88,1,0,0,
         0,86,84,1,0,0,0,86,87,1,0,0,0,87,17,1,0,0,0,88,86,1,0,0,0,89,94,
@@ -602,7 +602,7 @@ class in_silicoParser ( Parser ):
             self.state = 69
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==20:
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 1205248) != 0):
                 self.state = 68
                 self.argument_list()
 
@@ -625,11 +625,12 @@ class in_silicoParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def IDENTIFIER(self, i:int=None):
+        def expression(self, i:int=None):
             if i is None:
-                return self.getTokens(in_silicoParser.IDENTIFIER)
+                return self.getTypedRuleContexts(in_silicoParser.ExpressionContext)
             else:
-                return self.getToken(in_silicoParser.IDENTIFIER, i)
+                return self.getTypedRuleContext(in_silicoParser.ExpressionContext,i)
+
 
         def ARGUMENT_LIST_SEPARATOR(self, i:int=None):
             if i is None:
@@ -665,7 +666,7 @@ class in_silicoParser ( Parser ):
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 73
-            self.match(in_silicoParser.IDENTIFIER)
+            self.expression()
             self.state = 78
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -673,7 +674,7 @@ class in_silicoParser ( Parser ):
                 self.state = 74
                 self.match(in_silicoParser.ARGUMENT_LIST_SEPARATOR)
                 self.state = 75
-                self.match(in_silicoParser.IDENTIFIER)
+                self.expression()
                 self.state = 80
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)

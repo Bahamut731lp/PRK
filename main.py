@@ -1,16 +1,25 @@
+import sys
+import argparse
+import pathlib
+
 from antlr4 import *
 from in_silicoLexer import in_silicoLexer
 from in_silicoParser import in_silicoParser
 from evaluator import EvalVisitor
 
 def main():
-    code = """
-    @banger {
-      set x on 5 + 3 * 2
-    }
-    """
+    parser = argparse.ArgumentParser(description='Parse and evaluate In Silico code.')
+    parser.add_argument("file", help='Path to the input source file')
+    args = parser.parse_args()
 
-    input_stream = InputStream(code)
+    if not pathlib.Path(args.file).exists():
+        print(f"Error: File '{args.file}' does not exist.")
+        sys.exit(1)
+
+    # Read input from file
+    with open(args.file, 'r') as file:
+        input_stream = InputStream(file.read())
+
     lexer = in_silicoLexer(input_stream)
     stream = CommonTokenStream(lexer)
     parser = in_silicoParser(stream)
