@@ -1,8 +1,10 @@
+import logging
 import sys
 import argparse
 import pathlib
 
 from antlr4 import *
+from syntaxerrorhandler import SyntaxErrorListener
 from in_silicoLexer import in_silicoLexer
 from in_silicoParser import in_silicoParser
 from evaluator import EvalVisitor
@@ -23,11 +25,28 @@ def main():
     lexer = in_silicoLexer(input_stream)
     stream = CommonTokenStream(lexer)
     parser = in_silicoParser(stream)
+
+    error_listener = SyntaxErrorListener()
+    parser.removeErrorListeners() 
+    parser.addErrorListener(error_listener)
+
     tree = parser.program()
+    
+    # Check for syntax errors
+    if error_listener.errors:
+        for error in error_listener.errors:
+            logging.error(error)
+        sys.exit(1)
 
     visitor = EvalVisitor()
-    visitor.visit(tree)
 
+    # Handle semantic errors
+    try:
+        visitor.visit(tree)
+    except Exception as err:
+        logging.error(err)
+        sys.exit(1)
+        
     print(visitor.variables)  # should show {'x': 11.0}
 
 if __name__ == '__main__':

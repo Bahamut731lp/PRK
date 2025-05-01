@@ -72,9 +72,12 @@ class EvalVisitor(in_silicoVisitor):
         self.functions[func_name] = (params, statements, return_expr)
 
     def visitFunction_call(self, ctx):
-        func_name = ctx.IDENTIFIER().getText()
+        func = ctx.IDENTIFIER()
+        func_name = func.getText()
+
         if func_name not in self.functions:
-            raise Exception(f"Function '{func_name}' is not defined")
+            token = func.getSymbol()
+            raise Exception(f"Function '{func_name}' is not defined (error on line {token.line}:{token.column})")
 
         params, statements, return_expr = self.functions[func_name]
 

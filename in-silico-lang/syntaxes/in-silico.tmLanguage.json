@@ -1,0 +1,66 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "In Silico",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"name": "variable.other.mylang",
+			"match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+		},
+		{
+			"name": "keyword.operator.assignment.mylang",
+			"match": "\\bon\\b"
+		},
+		{
+			"name": "constant.numeric.mylang",
+			"match": "\\b\\d+\\b"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.other.in-silico",
+					"match": "@banger"
+				},
+				{
+					"name": "keyword.control.in-silico",
+					"match": "drop bombs we"
+				},
+				{
+					"name": "keyword.control.in-silico",
+					"match": "back with a track called"
+				},
+				{
+					"name": "keyword.control.in-silico",
+					"match": "soaking through"
+				},
+				{
+					"name": "keyword.control.in-silico",
+					"match": "\\bset\\b"
+				},
+				{
+					"name": "keyword.control.in-silico",
+					"match": "\\bon\\b"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.in-silico",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.in-silico",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.pend"
+}

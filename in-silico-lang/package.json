@@ -1,0 +1,25 @@
+{
+  "name": "in-silico-lang",
+  "displayName": "In Silico Lang",
+  "description": "In Silico Language Highligh",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "in-silico",
+      "aliases": ["In Silico", "in-silico"],
+      "extensions": [".pend"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "in-silico",
+      "scopeName": "source.pend",
+      "path": "./syntaxes/in-silico.tmLanguage.json"
+    }]
+  }
+}
