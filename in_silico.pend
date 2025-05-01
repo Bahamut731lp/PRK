@@ -6,5 +6,5 @@
         back with a track called test * amount
     }
 
-    set test on oostBass(10, 5)
+    set test on boostBass(10, 5)
 }
