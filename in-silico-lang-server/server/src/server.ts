@@ -21,6 +21,9 @@ import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 
+import FunctionManager from "./FunctionManager";
+import ControlSequenceManager from './ControlSequenceManager';
+
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -114,6 +117,43 @@ documents.onDidChangeContent((change) => {
 			}
 		});
 	}
+
+	let index = 0;
+
+	const controlManager = new ControlSequenceManager();
+	const fnManager = new FunctionManager();
+
+	for (const line of lines) {
+		diagnostics.push(...controlManager.parse(line, index));
+		diagnostics.push(...fnManager.parse(line, index));
+
+		// Check whitespaces
+		/*if (funcDeclar && funcDeclar.split(/\s/).length > 3) {
+			diagnostics.push({
+				severity: DiagnosticSeverity.Error,
+				message: "Function declaration has to have exactly one space between keywords.",
+				range: {
+					start: { line: index, character: line.indexOf("drop") },
+					end: { line: index, character: line.indexOf("we") + 2 }
+				}
+			});
+		}
+
+		if (returnKeyword && returnKeyword.split(/\s/).length > 5) {
+			diagnostics.push({
+				severity: DiagnosticSeverity.Error,
+				message: "Function declaration has to have exactly one space between keywords.",
+				range: {
+					start: { line: index, character: line.indexOf("back") },
+					end: { line: index, character: line.indexOf("called") + 2 }
+				}
+			});
+		}*/
+
+		index++;
+	}
+
+	console.log(fnManager.signatures);
 
     // Send the computed diagnostics to VS Code.
     connection.sendDiagnostics({ uri: change.document.uri, diagnostics });

@@ -14,7 +14,7 @@
 		},
 		{
 			"name": "entity.name.function",
-			"match": "(?!=drop bombs we\\s+)[a-zA-Z_][a-zA-Z0-9_]*"
+			"match": "(?!=drop bombs we\\s+)[a-zA-Z_][a-zA-Z0-9_]*(?=\\()"
 		},
 		{
 			"name": "variable.parameter",
@@ -38,7 +38,7 @@
 				},
 				{
 					"name": "keyword.control.in-silico",
-					"match": "drop bombs we"
+					"match": "(drop)\\s+(bombs)\\s+(we)"
 				},
 				{
 					"name": "keyword.control.in-silico",
