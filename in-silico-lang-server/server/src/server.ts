@@ -127,29 +127,6 @@ documents.onDidChangeContent((change) => {
 		diagnostics.push(...controlManager.parse(line, index));
 		diagnostics.push(...fnManager.parse(line, index));
 
-		// Check whitespaces
-		/*if (funcDeclar && funcDeclar.split(/\s/).length > 3) {
-			diagnostics.push({
-				severity: DiagnosticSeverity.Error,
-				message: "Function declaration has to have exactly one space between keywords.",
-				range: {
-					start: { line: index, character: line.indexOf("drop") },
-					end: { line: index, character: line.indexOf("we") + 2 }
-				}
-			});
-		}
-
-		if (returnKeyword && returnKeyword.split(/\s/).length > 5) {
-			diagnostics.push({
-				severity: DiagnosticSeverity.Error,
-				message: "Function declaration has to have exactly one space between keywords.",
-				range: {
-					start: { line: index, character: line.indexOf("back") },
-					end: { line: index, character: line.indexOf("called") + 2 }
-				}
-			});
-		}*/
-
 		index++;
 	}
 
