@@ -1,4 +1,5 @@
 import Diagnostics from './DiagnosticsManager';
+import { ErrorType } from './DefinitionManager';
 
 export default class ControlSequenceManager {
 
@@ -14,12 +15,29 @@ export default class ControlSequenceManager {
 	parse(line: string, index: number) {
 		const diagnostics = new Diagnostics();
 
+		if (index == 0 && this.isProgramDeclarationError(line)) {
+			diagnostics.error(
+				ErrorType.PROGRAM_NOT_DEFINED,
+				`Program must start with @banger declaration followed by block of statements.`,
+				{
+					line: index,
+					start: 0,
+					end: line.length 
+				}
+			);
+
+			return diagnostics.get();
+		}
+
 		if (this.isFunctionDeclarationError(line)) {
 			diagnostics.error(
-				index,
-				line.indexOf("drop"),
-				line.indexOf("we") + 2,
-				`Function declaration contains unnecessary whitespaces.`
+				ErrorType.FUNCTION_DECLARATION_SYNTAX_ERROR,
+				`Additional whitespaces in function declaration are not allowed.`,
+				{
+					line: index,
+					start: line.indexOf("drop"),
+					end: line.indexOf("we") + 2  
+				}
 			);
 
 			return diagnostics.get();
@@ -27,10 +45,13 @@ export default class ControlSequenceManager {
 
 		if (this.isReturnKeywordError(line)) {
 			diagnostics.error(
-				index,
-				line.indexOf("back"),
-				line.indexOf("with") + 2,
-				`Return keyword contains unnecessary whitespaces.`
+				ErrorType.RETURN_SYNTAX_ERROR,
+				`Additional whitespaces in return keyphrase are not allowed.`,
+				{
+					line: index,
+					start: line.indexOf("back"),
+					end: line.indexOf("called") + 6
+				}
 			);
 		}
 
@@ -38,6 +59,10 @@ export default class ControlSequenceManager {
 		return diagnostics.get();
 	}
 
+	isProgramDeclarationError(line: string) {
+		return !line.trim().startsWith("@banger")
+	}
+	
 	isFunctionDeclarationError(line: string) {
 		const result = line.match(this.keywords.FUNC_DECLAR);
 		

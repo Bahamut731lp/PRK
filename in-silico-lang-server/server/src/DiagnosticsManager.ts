@@ -11,10 +11,14 @@ export default class Diagnostics {
 		return this.diagnostics;
 	}
 	
-	add(level: DiagnosticSeverity, line: number, start: number, end: number, message: string) {
+	add(level: DiagnosticSeverity, code: number, line: number, start: number, end: number, message: string) {
 		this.diagnostics.push({
 			severity: DiagnosticSeverity.Error,
 			message,
+			code: code,
+			codeDescription: {
+				href: "www.google.com"
+			},
 			range: {
 				start: { line, character: start },
 				end: { line, character: end }
@@ -22,7 +26,7 @@ export default class Diagnostics {
 		});
 	}
 
-	error(line: number, start: number, end: number, message: string) {
-		this.add(DiagnosticSeverity.Error, line, start, end, message);
+	error(code: number, message: string, selection: { line: number; start: number; end: number }) {
+		this.add(DiagnosticSeverity.Error, code, selection.line, selection.start, selection.end, message);
 	}
 }

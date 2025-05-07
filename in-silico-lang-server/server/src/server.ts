@@ -6,23 +6,26 @@ import {
 	createConnection,
 	TextDocuments,
 	Diagnostic,
-	DiagnosticSeverity,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	CompletionItem,
-	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
-	InitializeResult
+	InitializeResult,
+	Location,
+	CompletionItemKind,
+	CodeAction,
+	CodeActionKind
 } from 'vscode-languageserver/node';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 
-import FunctionManager from "./FunctionManager";
 import ControlSequenceManager from './ControlSequenceManager';
+import DefinitionManager, { ErrorType, SymbolDefinition } from './DefinitionManager';
+import ActionManager from './ActionManager';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -51,10 +54,13 @@ connection.onInitialize((params: InitializeParams) => {
 	const result: InitializeResult = {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
+			// Goto definition support
+			definitionProvider: true,
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true
 			},
+			codeActionProvider: true,
 			diagnosticProvider: {
 				interFileDependencies: false,
 				workspaceDiagnostics: false
@@ -97,43 +103,66 @@ documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
 });
 
+const symbols: Record<string, Map<string, SymbolDefinition>> = {};
+
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-	console.log(`Document has changed: ${change.document.uri}`);
-
     const diagnostics: Diagnostic[] = [];
     const lines = change.document.getText().split(/\r?\n/g);
-
-	if (!lines[0].trim().startsWith("@banger")) {
-		diagnostics.push({
-			severity: DiagnosticSeverity.Error,
-			message: "In Silico program must start with @banger declaration followed by block of statements.",
-			range: {
-				start: { line: 0, character: 0 },
-				end: { line: 0, character: lines.length }
-			}
-		});
-	}
 
 	let index = 0;
 
 	const controlManager = new ControlSequenceManager();
-	const fnManager = new FunctionManager();
+	const definitionManager = new DefinitionManager(change.document.uri);
 
 	for (const line of lines) {
 		diagnostics.push(...controlManager.parse(line, index));
-		diagnostics.push(...fnManager.parse(line, index));
+		diagnostics.push(...definitionManager.parse(line, index));
 
 		index++;
 	}
 
-	console.log(fnManager.signatures);
+	symbols[change.document.uri] = definitionManager.definitions;
 
     // Send the computed diagnostics to VS Code.
     connection.sendDiagnostics({ uri: change.document.uri, diagnostics });
+});
+
+connection.onDefinition((params: TextDocumentPositionParams): Location | null => {
+	const uri = params.textDocument.uri;
+	const lineText = documents.get(uri)?.getText({
+		start: { line: params.position.line, character: 0 },
+		end: { line: params.position.line + 1, character: 0}
+	}) || '';
+
+	const tokens = [...lineText.match(/\w+/g) ?? []];
+	let length = 0;
+	let match = "";
+
+	// Najdeme, který token odpovídá pozici kurzoru
+	for (const token of tokens) {
+		length = lineText.indexOf(token) + token.length;
+
+		if (params.position.character < length) {
+			match = token;
+			break;
+		}
+	}
+
+	// Find word at position
+	if (!match) {return null;}
+
+	const definitions = symbols[uri];
+	if (!definitions) {return null;}
+
+
+	const def = definitions.get(match);
+	if (!def) {return null;}
+
+	return def.location;
 });
 
 // This handler provides the initial list of the completion items.
@@ -142,18 +171,21 @@ connection.onCompletion(
 		// The pass parameter contains the position of the text document in
 		// which code complete got requested. For the example we ignore this
 		// info and always provide the same completion items.
-		return [
-			{
-				label: 'TypeScript',
-				kind: CompletionItemKind.Text,
-				data: 1
-			},
-			{
-				label: 'JavaScript',
-				kind: CompletionItemKind.Text,
-				data: 2
-			}
-		];
+		const uri = _textDocumentPosition.textDocument.uri;
+
+		// Extract current word for basic prefix matching
+		const definitions = symbols[uri];
+		const items = [];
+
+		for (const [key, value] of definitions.entries()) {
+			items.push({
+				label: key,
+				kind: value.type,
+				data: value
+			});
+		}
+		
+		return items;
 	}
 );
 
@@ -161,16 +193,30 @@ connection.onCompletion(
 // the completion list.
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
+		const data = item.data as SymbolDefinition;
+		
+		if (data.type == CompletionItemKind.Function) {
+			item.insertText = `${data.name}()`;
 		}
+
+		if (data.type == CompletionItemKind.Keyword) {
+			item.insertText = data.name;
+		}
+
 		return item;
 	}
 );
+
+connection.onCodeAction((params) => {
+	const errors = params.context.diagnostics;
+	const actions = new ActionManager(params);
+
+	for (const error of errors) {
+		actions.handle(error);
+	}
+
+	return actions.get();
+});
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
