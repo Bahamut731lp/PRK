@@ -17,10 +17,11 @@ export default class ActionManager {
     handle(diagnostic: Diagnostic) {
         const generators: Record<number, CallableFunction> = {
             [ErrorType.FUNCTION_DECLARATION_SYNTAX_ERROR]: this.handleFunctionDeclarationSyntaxError,
-            [ErrorType.RETURN_SYNTAX_ERROR]: this.handleReturnSyntaxError
+            [ErrorType.RETURN_SYNTAX_ERROR]: this.handleReturnSyntaxError,
+            [ErrorType.PROGRAM_NOT_DEFINED]: this.handleBangerSyntaxError
         } as const;
 
-        if (diagnostic.code && diagnostic.code in generators) {
+        if (diagnostic.code != undefined && diagnostic.code in generators) {
             generators[Number(diagnostic.code)].bind(this)(diagnostic);
         }
     }
@@ -51,6 +52,23 @@ export default class ActionManager {
                     [this.params.textDocument.uri]: [
                         {
                             newText: "back with a track called",
+                            range: diagnostic.range
+                        }
+                    ]
+                }
+            }
+        });
+    }
+
+    handleBangerSyntaxError(diagnostic: Diagnostic) {
+        this.actions.push({
+            title: "Add @banger declaration",
+            kind: CodeActionKind.QuickFix,
+            edit: {
+                changes: {
+                    [this.params.textDocument.uri]: [
+                        {
+                            newText: "@banger",
                             range: diagnostic.range
                         }
                     ]

@@ -22,7 +22,7 @@ export default class ControlSequenceManager {
 				{
 					line: index,
 					start: 0,
-					end: line.length 
+					end: line.indexOf("{") || line.length 
 				}
 			);
 

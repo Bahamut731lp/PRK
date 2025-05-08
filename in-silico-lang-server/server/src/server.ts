@@ -15,8 +15,11 @@ import {
 	InitializeResult,
 	Location,
 	CompletionItemKind,
-	CodeAction,
-	CodeActionKind
+	CodeLens,
+	Hover,
+	ReferenceParams,
+	FoldingRange,
+	FoldingRangeKind
 } from 'vscode-languageserver/node';
 
 import {
@@ -24,8 +27,9 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 import ControlSequenceManager from './ControlSequenceManager';
-import DefinitionManager, { ErrorType, SymbolDefinition } from './DefinitionManager';
+import DefinitionManager, { SymbolDefinition } from './DefinitionManager';
 import ActionManager from './ActionManager';
+import * as utils from "./utils";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -39,7 +43,7 @@ let hasWorkspaceFolderCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
-	
+
 	console.log('Initializing In-Silico Language server');
 
 	// Does the client support the `workspace/configuration` request?
@@ -61,10 +65,16 @@ connection.onInitialize((params: InitializeParams) => {
 				resolveProvider: true
 			},
 			codeActionProvider: true,
+			codeLensProvider: {
+				resolveProvider: true
+			},
 			diagnosticProvider: {
 				interFileDependencies: false,
 				workspaceDiagnostics: false
-			}
+			},
+			hoverProvider: true,
+			foldingRangeProvider: true,
+			referencesProvider: true
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -110,8 +120,8 @@ const symbols: Record<string, Map<string, SymbolDefinition>> = {};
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-    const diagnostics: Diagnostic[] = [];
-    const lines = change.document.getText().split(/\r?\n/g);
+	const diagnostics: Diagnostic[] = [];
+	const lines = change.document.getText().split(/\r?\n/g);
 
 	let index = 0;
 
@@ -127,40 +137,30 @@ documents.onDidChangeContent((change) => {
 
 	symbols[change.document.uri] = definitionManager.definitions;
 
-    // Send the computed diagnostics to VS Code.
-    connection.sendDiagnostics({ uri: change.document.uri, diagnostics });
+	// Send the computed diagnostics to VS Code.
+	connection.sendDiagnostics({ uri: change.document.uri, diagnostics });
 });
 
 connection.onDefinition((params: TextDocumentPositionParams): Location | null => {
 	const uri = params.textDocument.uri;
 	const lineText = documents.get(uri)?.getText({
 		start: { line: params.position.line, character: 0 },
-		end: { line: params.position.line + 1, character: 0}
+		end: { line: params.position.line + 1, character: 0 }
 	}) || '';
 
 	const tokens = [...lineText.match(/\w+/g) ?? []];
 	let length = 0;
-	let match = "";
-
-	// Najdeme, který token odpovídá pozici kurzoru
-	for (const token of tokens) {
-		length = lineText.indexOf(token) + token.length;
-
-		if (params.position.character < length) {
-			match = token;
-			break;
-		}
-	}
+	let match = utils.getTokenByPosition(lineText, params.position.character);
 
 	// Find word at position
-	if (!match) {return null;}
+	if (!match) { return null; }
 
 	const definitions = symbols[uri];
-	if (!definitions) {return null;}
+	if (!definitions) { return null; }
 
 
 	const def = definitions.get(match);
-	if (!def) {return null;}
+	if (!def) { return null; }
 
 	return def.location;
 });
@@ -184,7 +184,7 @@ connection.onCompletion(
 				data: value
 			});
 		}
-		
+
 		return items;
 	}
 );
@@ -194,7 +194,7 @@ connection.onCompletion(
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
 		const data = item.data as SymbolDefinition;
-		
+
 		if (data.type == CompletionItemKind.Function) {
 			item.insertText = `${data.name}()`;
 		}
@@ -216,6 +216,152 @@ connection.onCodeAction((params) => {
 	}
 
 	return actions.get();
+});
+
+connection.onCodeLens((params) => {
+	const document = documents.get(params.textDocument.uri);
+	if (!document) { return []; }
+
+	let index = 0;
+	const lines = document.getText().split("\n");
+	const lenses: CodeLens[] = [];
+
+	for (const line of lines) {
+		if (line.includes("drop bombs we")) {
+			const args = (line.match(/\(.+\)/)?.at(0) ?? "").split(",");
+
+			lenses.push(
+				{
+					command: {
+						title: `Parameters: ${args.length}`,
+						command: ""
+					},
+					range: {
+						start: {
+							character: line.indexOf("drop"),
+							line: index
+						},
+						end: {
+							character: line.indexOf(")"),
+							line: index
+						}
+					}
+				}
+			);
+		}
+
+		index += 1;
+	}
+
+	return lenses;
+});
+
+connection.onCodeLensResolve((lens) => {
+	console.log(lens);
+
+	return lens;
+});
+
+connection.onHover((params: TextDocumentPositionParams): Hover | null => {
+	const document = documents.get(params.textDocument.uri);
+	if (!document) {return null;}
+
+
+	const line = document.getText({ start: { character: 0, line: params.position.line }, end: { character: 9999, line: params.position.line } });
+	const tokens = [...line.match(/\w+/g) ?? []];
+	const definitions = symbols[document.uri];
+
+	let length = 0;
+	let match = utils.getTokenByPosition(line, params.position.character);
+
+	if (match && definitions.has(match)) {
+		const definition = definitions.get(match) as SymbolDefinition;
+		
+		switch (definition.type) {
+			case CompletionItemKind.Function:
+				return {
+					contents: {
+						kind: 'markdown',
+						value: `\`\`\`in-silico\ndrop bombs we ${definition.name}\n\`\`\``
+					}
+				}
+		
+			default:
+				return {
+					contents: {
+						kind: 'markdown',
+						value: `\`\`\`in-silico\nset ${definition.name}\n\`\`\``
+					}
+				}
+		}
+	}
+
+	return null;
+});
+
+connection.onReferences((params: ReferenceParams): Location[] | null  => {
+	const document = documents.get(params.textDocument.uri);
+	if (!document) {return null;}
+
+	let locations: Location[] = [];
+	let index = -1;
+
+	const definitions = symbols[document.uri];
+	const lines = document.getText().split("\n");
+	const token = utils.getTokenByPosition(lines[params.position.line], params.position.character);
+
+	if (!definitions.has(token)) return null;
+
+	for (const line of lines) {
+		const tokens = [...line.match(/\w+/g) ?? []];
+	
+		index += 1;
+		if (!tokens.includes(token)) { continue; }
+
+		locations.push({
+			uri: params.textDocument.uri,
+			range: {
+				start: {
+					line: index,
+					character: line.indexOf(token)
+				},
+				end: {
+					line: index,
+					character: line.indexOf(token) + token.length
+				}
+			}
+		});
+	}
+
+	return locations;
+});
+
+connection.onFoldingRanges((params) => {
+	const document = documents.get(params.textDocument.uri);
+	const lines = document?.getText().split("\n") ?? [];
+	const ranges: FoldingRange[] = [];
+	const stack: number[] = [];
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i].trim();
+		
+		if (line.includes('{')) {
+			stack.push(i);
+		}
+
+		if (line.includes('}')) {
+			const start = stack.pop();
+			if (start !== undefined && i > start) {
+				ranges.push({
+					startLine: start,
+					endLine: i,
+					kind: FoldingRangeKind.Region
+				});
+			}
+		}
+	}
+
+	return null;
 });
 
 // Make the text document manager listen on the connection
