@@ -1,0 +1,6 @@
+@banger {
+    set test on 50
+    set quake on 0
+
+    set result on test / quake
+}

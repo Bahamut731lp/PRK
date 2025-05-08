@@ -1,5 +1,5 @@
-from in_silicoVisitor import in_silicoVisitor
-from in_silicoParser import in_silicoParser
+from src.in_silicoVisitor import in_silicoVisitor
+from src.in_silicoParser import in_silicoParser
 
 class EvalVisitor(in_silicoVisitor):
     def __init__(self):

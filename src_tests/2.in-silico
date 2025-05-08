@@ -1,0 +1,18 @@
+@banger {
+    drop bombs we boostBass(test, amount) {
+        set omega on 1
+        set alpha on 1
+
+        drop bombs we boost(beat) {
+            back with a track called beat + alpha
+        }
+
+        drop bombs we bass(beat) {
+            back with a track called beat + omega
+        }
+        
+        back with a track called boost(test) / bass(amount)
+    }
+
+    set test on boostBass(50, 10)
+}

@@ -1,0 +1,11 @@
+@banger {
+    set a on 5
+    set b on 5
+    set c on a + b
+
+    drop bombs we boostBass(test, amount) {
+        back with a track called 5
+    }
+
+    set test on boostBass(50, 10)
+}

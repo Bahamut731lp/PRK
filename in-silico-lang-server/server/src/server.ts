@@ -68,10 +68,6 @@ connection.onInitialize((params: InitializeParams) => {
 			codeLensProvider: {
 				resolveProvider: true
 			},
-			diagnosticProvider: {
-				interFileDependencies: false,
-				workspaceDiagnostics: false
-			},
 			hoverProvider: true,
 			foldingRangeProvider: true,
 			referencesProvider: true
@@ -148,9 +144,7 @@ connection.onDefinition((params: TextDocumentPositionParams): Location | null =>
 		end: { line: params.position.line + 1, character: 0 }
 	}) || '';
 
-	const tokens = [...lineText.match(/\w+/g) ?? []];
-	let length = 0;
-	let match = utils.getTokenByPosition(lineText, params.position.character);
+	const match = utils.getTokenByPosition(lineText, params.position.character);
 
 	// Find word at position
 	if (!match) { return null; }
@@ -268,11 +262,8 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
 
 
 	const line = document.getText({ start: { character: 0, line: params.position.line }, end: { character: 9999, line: params.position.line } });
-	const tokens = [...line.match(/\w+/g) ?? []];
 	const definitions = symbols[document.uri];
-
-	let length = 0;
-	let match = utils.getTokenByPosition(line, params.position.character);
+	const match = utils.getTokenByPosition(line, params.position.character);
 
 	if (match && definitions.has(match)) {
 		const definition = definitions.get(match) as SymbolDefinition;
@@ -284,7 +275,7 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
 						kind: 'markdown',
 						value: `\`\`\`in-silico\ndrop bombs we ${definition.name}\n\`\`\``
 					}
-				}
+				};
 		
 			default:
 				return {
@@ -292,7 +283,7 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
 						kind: 'markdown',
 						value: `\`\`\`in-silico\nset ${definition.name}\n\`\`\``
 					}
-				}
+				};
 		}
 	}
 
@@ -303,14 +294,14 @@ connection.onReferences((params: ReferenceParams): Location[] | null  => {
 	const document = documents.get(params.textDocument.uri);
 	if (!document) {return null;}
 
-	let locations: Location[] = [];
+	const locations: Location[] = [];
 	let index = -1;
 
 	const definitions = symbols[document.uri];
 	const lines = document.getText().split("\n");
 	const token = utils.getTokenByPosition(lines[params.position.line], params.position.character);
 
-	if (!definitions.has(token)) return null;
+	if (!definitions.has(token)) {return null;}
 
 	for (const line of lines) {
 		const tokens = [...line.match(/\w+/g) ?? []];
