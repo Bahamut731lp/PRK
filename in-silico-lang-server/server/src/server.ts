@@ -20,7 +20,9 @@ import {
 	ReferenceParams,
 	FoldingRange,
 	FoldingRangeKind,
-	SignatureHelp
+	SignatureHelp,
+	InlayHint,
+	InlayHintKind
 } from 'vscode-languageserver/node';
 
 import {
@@ -72,6 +74,7 @@ connection.onInitialize((params: InitializeParams) => {
 			hoverProvider: true,
 			foldingRangeProvider: true,
 			referencesProvider: true,
+			inlayHintProvider: true,
 			signatureHelpProvider: {
 				triggerCharacters: ['(', ',']
 			}
@@ -395,6 +398,43 @@ connection.onSignatureHelp(params => {
 	};
 
 	return result;
+});
+
+connection.languages.inlayHint.on((params) => {
+	console.log(params);
+	const uri = params.textDocument.uri;
+	const range = params.range;
+	const document = documents.get(uri);
+	const definitions = symbols[uri];
+  
+	const hints: InlayHint[] = [];
+	if (!document) {
+		return [];
+	}
+
+	const lines = document.getText().split("\n");
+
+	for (let i = range.start.line; i <= range.end.line; i++) {
+		const line = lines[i];
+		const tokens = line.match(/\w+/g) || [];
+
+		for (const token of tokens) {
+			if (definitions?.has(token)) {
+				const definition = definitions.get(token) as SymbolDefinition;
+
+				if (definition.type === CompletionItemKind.Function && !line.includes("drop bombs we")) {
+					hints.push({
+						position: { line: i, character: line.indexOf(token) + token.length },
+						label: `(${definition.signature?.parameters?.map(param => param.label).join(", ") || "no parameters"})`,
+						kind: InlayHintKind.Type,
+						tooltip: "Function"
+					});
+				}
+			}
+		}
+	}
+
+	return hints;
 });
 
 // Make the text document manager listen on the connection
