@@ -1,9 +1,10 @@
-import { CompletionItemKind, Diagnostic, Location } from 'vscode-languageserver/node';
+import { CompletionItemKind, Diagnostic, Location, SignatureInformation } from 'vscode-languageserver/node';
 import Diagnostics from './DiagnosticsManager';
 
 export interface SymbolDefinition {
 	name: string;
-	type: CompletionItemKind
+	type: CompletionItemKind;
+	signature?: SignatureInformation;
 	location: Location;
 }
 
@@ -32,9 +33,16 @@ export default class DefinitionManager {
 		const varDeclaration = this.isVariableDeclaration(line);
 
 		if (fnDeclaration) {
+			const paramsMatch = line.match(/\(([^)]*)\)/);
+			const params = paramsMatch ? paramsMatch[1].split(',').map(param => param.trim()) : [];
+
 			this.definitions.set(fnDeclaration, {
 				name: fnDeclaration,
 				type: CompletionItemKind.Function,
+				signature: {
+					label: `${fnDeclaration}(${params.join(', ')})`,
+					parameters: params.map(param => ({ label: param }))
+				},
 				location: {
 					uri: this.uri,
 					range: {

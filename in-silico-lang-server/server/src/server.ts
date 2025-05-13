@@ -19,7 +19,8 @@ import {
 	Hover,
 	ReferenceParams,
 	FoldingRange,
-	FoldingRangeKind
+	FoldingRangeKind,
+	SignatureHelp
 } from 'vscode-languageserver/node';
 
 import {
@@ -70,7 +71,10 @@ connection.onInitialize((params: InitializeParams) => {
 			},
 			hoverProvider: true,
 			foldingRangeProvider: true,
-			referencesProvider: true
+			referencesProvider: true,
+			signatureHelpProvider: {
+				triggerCharacters: ['(', ',']
+			}
 		}
 	};
 	if (hasWorkspaceFolderCapability) {
@@ -353,6 +357,44 @@ connection.onFoldingRanges((params) => {
 	}
 
 	return null;
+});
+
+connection.onSignatureHelp(params => {
+	const uri = params.textDocument.uri;
+	const document = documents.get(uri);
+	const lines = document?.getText().split("\n") ?? [];
+	const line = lines[params.position.line];
+
+	const definitions = symbols[uri];
+	const prefix = line.substring(0, params.position.character);
+	const match = prefix.match(/(\w+)\s*\(.*$/);
+	const functionName = match ? match[1] : null;
+	if (!functionName) {return;}
+
+	const definition = definitions.get(functionName);
+	const signature = definition?.signature;
+	if (!signature) {return;}
+
+	const commaIndexes: number[] = [];
+	for (let i = 0; i < prefix.length; i++) {
+		if (prefix[i] === ',') {
+			commaIndexes.push(i);
+		}
+	}
+	
+	const activeParameter = commaIndexes.findIndex((value, index, array) => 
+		params.position.character > value && 
+		(index === array.length - 1 || params.position.character <= array[index + 1])
+	) + 1;
+
+	const result: SignatureHelp = {
+		signatures: [
+			signature
+		],
+		activeParameter
+	};
+
+	return result;
 });
 
 // Make the text document manager listen on the connection
