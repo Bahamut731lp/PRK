@@ -3,7 +3,7 @@
 	"description": "A In Silico Language Server",
 	"author": "Kevin Daněk",
 	"license": "MIT",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"publisher": "kevin-danek",
 	"repository": {
 		"type": "git",
